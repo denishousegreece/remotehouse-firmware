@@ -99,6 +99,13 @@ h1{font-size:20px;font-weight:600;margin-bottom:16px;text-align:center}
   </div>
 
   <div class="card">
+    <div class="temps">
+      <div class="temp-box"><div class="temp-val" id="pzemV">—</div><div class="temp-lbl">⚡ Волта</div></div>
+      <div class="temp-box"><div class="temp-val" id="pzemW">—</div><div class="temp-lbl">⚡ Ватове</div></div>
+    </div>
+  </div>
+
+  <div class="card">
     <div id="relayList"></div>
   </div>
 
@@ -171,6 +178,8 @@ function connectMqtt() {
       }
       renderRelays();
       updateAcUI(data.ac_power, data.ac_mode, data.ac_temp, data.ac_fan);
+      if (data.pzem_voltage !== undefined) document.getElementById('pzemV').textContent = data.pzem_voltage.toFixed(0) + 'V';
+      if (data.pzem_power !== undefined) document.getElementById('pzemW').textContent = data.pzem_power.toFixed(0) + 'W';
       lastMessageTime = Date.now();
       updateStatusLine();
     } catch (e) {}
