@@ -39,9 +39,25 @@ h1{font-size:20px;font-weight:600;margin-bottom:16px;text-align:center}
 .sw::after{content:'';position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .2s}
 .sw.on::after{transform:translateX(24px)}
 .footer-note{text-align:center;font-size:11px;color:var(--text2);margin-top:20px}
+#gate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+#gate-box{width:100%;max-width:320px;text-align:center}
+#gate-box h2{font-size:18px;margin-bottom:16px}
+#gate-input{width:100%;padding:14px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:16px;text-align:center;box-sizing:border-box}
+#gate-btn{width:100%;margin-top:12px;padding:14px;border-radius:10px;border:none;background:var(--blue);color:#fff;font-size:16px;font-weight:600;cursor:pointer}
+#gate-err{color:var(--red);font-size:13px;margin-top:10px;min-height:16px}
+#app{display:none}
 </style>
 </head>
 <body>
+<div id="gate">
+  <div id="gate-box">
+    <h2>🔒 Далечна къща</h2>
+    <input type="password" id="gate-input" placeholder="Парола" autocomplete="off">
+    <button id="gate-btn">Влез</button>
+    <div id="gate-err"></div>
+  </div>
+</div>
+<div id="app">
   <h1>🏠 Далечна къща</h1>
   <div class="status-line" id="statusLine">Свързване...</div>
 
@@ -58,6 +74,7 @@ h1{font-size:20px;font-weight:600;margin-bottom:16px;text-align:center}
 
   <div class="footer-note">Автоматично обновяване на всеки няколко секунди</div>
 
+</div>
 <script src="https://cdn.jsdelivr.net/npm/mqtt/dist/mqtt.min.js"></script>
 <script>
 const MQTT_HOST = '65bdce91cd294059b327d8cc6d9744e2.s1.eu.hivemq.cloud';
@@ -134,9 +151,31 @@ function connectMqtt() {
   });
 }
 
-renderRelays();
-connectMqtt();
-setInterval(updateStatusLine, 5000);
+const SITE_PASS = 'denis4444'; // смени с каквото искаш - виж бележката в чата
+
+function unlock() {
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  renderRelays();
+  connectMqtt();
+  setInterval(updateStatusLine, 5000);
+}
+
+function tryLogin() {
+  const val = document.getElementById('gate-input').value;
+  if (val === SITE_PASS) {
+    localStorage.setItem('rh_unlocked', '1');
+    unlock();
+  } else {
+    document.getElementById('gate-err').textContent = 'Грешна парола';
+  }
+}
+document.getElementById('gate-btn').addEventListener('click', tryLogin);
+document.getElementById('gate-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') tryLogin(); });
+
+if (localStorage.getItem('rh_unlocked') === '1') {
+  unlock();
+}
 </script>
 </body>
 </html>
