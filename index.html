@@ -39,6 +39,12 @@ h1{font-size:20px;font-weight:600;margin-bottom:16px;text-align:center}
 .sw::after{content:'';position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .2s}
 .sw.on::after{transform:translateX(24px)}
 .footer-note{text-align:center;font-size:11px;color:var(--text2);margin-top:20px}
+.ac-modes{display:flex;gap:8px;margin-bottom:12px}
+.ac-btn{flex:1;padding:10px 6px;border-radius:8px;border:none;background:var(--bg);color:var(--text2);font-size:13px;cursor:pointer}
+.ac-btn.active{background:var(--blue);color:#fff}
+.ac-temp{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:14px}
+.ac-temp-val{font-size:28px;font-weight:700;min-width:64px;text-align:center}
+.ac-round{width:40px;height:40px;border-radius:50%;border:none;background:var(--bg);color:var(--text);font-size:20px;cursor:pointer}
 #gate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
 #gate-box{width:100%;max-width:320px;text-align:center}
 #gate-box h2{font-size:18px;margin-bottom:16px}
@@ -65,6 +71,30 @@ h1{font-size:20px;font-weight:600;margin-bottom:16px;text-align:center}
     <div class="temps">
       <div class="temp-box"><div class="temp-val" id="tempVatreshna">—</div><div class="temp-lbl">🌡 Вътрешна</div></div>
       <div class="temp-box"><div class="temp-val" id="tempVanshna">—</div><div class="temp-lbl">🌡 Външна</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <span style="font-weight:600">❄️ Климатик</span>
+      <button class="sw" id="acPowerBtn" onclick="toggleAcPower()"></button>
+    </div>
+    <div class="ac-modes">
+      <button class="ac-btn" id="acModeCool" onclick="setAc('mode','cool')">❄ Cool</button>
+      <button class="ac-btn" id="acModeHeat" onclick="setAc('mode','heat')">🔥 Heat</button>
+      <button class="ac-btn" id="acModeDry" onclick="setAc('mode','dry')">💧 Dry</button>
+      <button class="ac-btn" id="acModeFan" onclick="setAc('mode','fan')">🌀 Fan</button>
+    </div>
+    <div class="ac-temp">
+      <button class="ac-round" onclick="stepAcTemp(-1)">−</button>
+      <div class="ac-temp-val" id="acTempVal">24°C</div>
+      <button class="ac-round" onclick="stepAcTemp(1)">+</button>
+    </div>
+    <div class="ac-modes">
+      <button class="ac-btn" id="acFanAuto" onclick="setAc('fan','auto')">Auto</button>
+      <button class="ac-btn" id="acFanLow" onclick="setAc('fan','low')">Low</button>
+      <button class="ac-btn" id="acFanMid" onclick="setAc('fan','mid')">Mid</button>
+      <button class="ac-btn" id="acFanHigh" onclick="setAc('fan','high')">High</button>
     </div>
   </div>
 
@@ -140,6 +170,7 @@ function connectMqtt() {
         relayState[i] = !!data['relay' + i];
       }
       renderRelays();
+      updateAcUI(data.ac_power, data.ac_mode, data.ac_temp, data.ac_fan);
       lastMessageTime = Date.now();
       updateStatusLine();
     } catch (e) {}
@@ -149,6 +180,41 @@ function connectMqtt() {
     document.getElementById('statusLine').textContent = '⚠️ Грешка при връзка';
     document.getElementById('statusLine').className = 'status-line offline';
   });
+}
+
+let acTempCurrent = 24;
+
+function updateAcUI(power, mode, temp, fan) {
+  const btn = document.getElementById('acPowerBtn');
+  btn.className = 'sw ' + (power ? 'on' : 'off');
+  if (temp !== undefined && temp !== null) {
+    acTempCurrent = temp;
+    document.getElementById('acTempVal').textContent = temp + '°C';
+  }
+  for (const m of ['cool','heat','dry','fan']) {
+    document.getElementById('acMode' + m[0].toUpperCase() + m.slice(1)).classList.toggle('active', mode === m);
+  }
+  for (const f of ['auto','low','mid','high']) {
+    document.getElementById('acFan' + f[0].toUpperCase() + f.slice(1)).classList.toggle('active', fan === f);
+  }
+}
+function acPublish(topic, payload) {
+  if (client && client.connected) client.publish(topic, String(payload));
+}
+function toggleAcPower() {
+  const on = !document.getElementById('acPowerBtn').classList.contains('on');
+  acPublish('remotehouse/ac/power', on ? '1' : '0');
+  document.getElementById('acPowerBtn').className = 'sw ' + (on ? 'on' : 'off');
+}
+function setAc(key, val) {
+  acPublish('remotehouse/ac/' + key, val);
+  if (key === 'mode') for (const m of ['cool','heat','dry','fan']) document.getElementById('acMode' + m[0].toUpperCase() + m.slice(1)).classList.toggle('active', val === m);
+  if (key === 'fan') for (const f of ['auto','low','mid','high']) document.getElementById('acFan' + f[0].toUpperCase() + f.slice(1)).classList.toggle('active', val === f);
+}
+function stepAcTemp(delta) {
+  acTempCurrent = Math.min(31, Math.max(16, acTempCurrent + delta));
+  document.getElementById('acTempVal').textContent = acTempCurrent + '°C';
+  acPublish('remotehouse/ac/temp', acTempCurrent);
 }
 
 const SITE_PASS = 'denis4444'; // смени с каквото искаш - виж бележката в чата
