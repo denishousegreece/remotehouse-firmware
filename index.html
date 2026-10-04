@@ -80,6 +80,10 @@ h1{font-size:20px;font-weight:600;margin-bottom:16px;text-align:center}
       <button class="sw" id="acPowerBtn" onclick="toggleAcPower()"></button>
     </div>
     <div class="ac-modes">
+      <button class="ac-btn" id="acBrandTcl" onclick="setAc('brand','tcl')">TCL</button>
+      <button class="ac-btn" id="acBrandMidea" onclick="setAc('brand','midea')">Midea</button>
+    </div>
+    <div class="ac-modes">
       <button class="ac-btn" id="acModeCool" onclick="setAc('mode','cool')">❄ Cool</button>
       <button class="ac-btn" id="acModeHeat" onclick="setAc('mode','heat')">🔥 Heat</button>
       <button class="ac-btn" id="acModeDry" onclick="setAc('mode','dry')">💧 Dry</button>
@@ -177,7 +181,7 @@ function connectMqtt() {
         relayState[i] = !!data['relay' + i];
       }
       renderRelays();
-      updateAcUI(data.ac_power, data.ac_mode, data.ac_temp, data.ac_fan);
+      updateAcUI(data.ac_power, data.ac_mode, data.ac_temp, data.ac_fan, data.ac_brand);
       if (data.pzem_voltage !== undefined) document.getElementById('pzemV').textContent = data.pzem_voltage.toFixed(0) + 'V';
       if (data.pzem_power !== undefined) document.getElementById('pzemW').textContent = data.pzem_power.toFixed(0) + 'W';
       lastMessageTime = Date.now();
@@ -193,7 +197,7 @@ function connectMqtt() {
 
 let acTempCurrent = 24;
 
-function updateAcUI(power, mode, temp, fan) {
+function updateAcUI(power, mode, temp, fan, brand) {
   const btn = document.getElementById('acPowerBtn');
   btn.className = 'sw ' + (power ? 'on' : 'off');
   if (temp !== undefined && temp !== null) {
@@ -206,6 +210,8 @@ function updateAcUI(power, mode, temp, fan) {
   for (const f of ['auto','low','mid','high']) {
     document.getElementById('acFan' + f[0].toUpperCase() + f.slice(1)).classList.toggle('active', fan === f);
   }
+  document.getElementById('acBrandTcl').classList.toggle('active', brand === 'tcl');
+  document.getElementById('acBrandMidea').classList.toggle('active', brand === 'midea');
 }
 function acPublish(topic, payload) {
   if (client && client.connected) client.publish(topic, String(payload));
